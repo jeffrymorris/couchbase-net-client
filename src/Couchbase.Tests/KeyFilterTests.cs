@@ -12,7 +12,7 @@ namespace Couchbase.Tests
     public class KeyFilterTests
     {
         [Test]
-        public void Test_that_ShouldTrace_returns_true_when_data_and_message_are_same()
+        public void Test_That_ShouldTrace_Returns_True_When_Data_And_Message_Are_Same()
         {
             const string pattern = "10-contentid";
             const string message = pattern;
@@ -21,7 +21,7 @@ namespace Couchbase.Tests
         }
 
         [Test]
-        public void Test_that_ShouldTrace_returns_false_when_data_and_message_are_not_same()
+        public void Test_That_ShouldTrace_Returns_False_When_Data_And_Message_Are_Not_Same()
         {
             const string pattern = "10-contentid";
             const string message = "11-contentid";
@@ -30,7 +30,7 @@ namespace Couchbase.Tests
         }
 
         [Test]
-        public void Test_that_ShouldTrace_returns_true_when_key_matches_regex()
+        public void Test_That_ShouldTrace_Returns_True_When_Key_Matches_Regex()
         {
             const string pattern = "^([0-9]*-[a-zA-Z]*)+$";
             const string message = "11-contentid";
@@ -39,7 +39,7 @@ namespace Couchbase.Tests
         }
 
         [Test]
-        public void Test_that_ShouldTrace_returns_false_when_key_does_not_match_regex()
+        public void Test_That_ShouldTrace_Returns_False_When_Key_Does_Not_Match_Regex()
         {
             const string pattern = "^([0-9]*-[a-zA-Z]*)+$";
             const string message = "11contentid";
@@ -48,7 +48,7 @@ namespace Couchbase.Tests
         }
 
         [Test]
-        public void Test_that_ShouldTrace_returns_false_when_key_does_not_match_regex2()
+        public void Test_That_ShouldTrace_Returns_False_When_Key_Does_Not_Match_Regex2()
         {
             const string pattern = "^([0-9]*-[a-zA-Z]*)+$";
             const string message = "aa-contentid";
@@ -57,7 +57,7 @@ namespace Couchbase.Tests
         }
 
         [Test]
-        public void Test_that_ShouldTrace_returns_false_when_key_does_not_match_regex3()
+        public void Test_That_ShouldTrace_Returns_False_When_Key_Does_Not_Match_Regex3()
         {
             const string pattern = "^([0-9]*-[a-zA-Z]*)+$";
             const string message = "contentid-11";
@@ -66,7 +66,7 @@ namespace Couchbase.Tests
         }
 
         [Test]
-        public void Test_that_ShouldTrace_throws_not_supported_exception_when_TraceEventType_is_not_Information()
+        public void Test_That_ShouldTrace_Throws_Not_Supported_Exception_When_TraceEventType_Is_Not_Information()
         {
             const TraceEventType notSupportedTraceEventType = TraceEventType.Error;
             const string pattern = "10-contentid";
