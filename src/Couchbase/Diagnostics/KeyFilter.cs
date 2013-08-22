@@ -15,23 +15,21 @@ namespace Couchbase.Diagnostics
     public class KeyFilter : TraceFilter
     {
         private Regex _regex;
-        private string _expression;
+        private string _pattern;
+        private const string DefaultRegex = ".*";
 
         /// <summary>
         /// Primary ctor to use - called internally by BCL infrastructure based off app.config settings
         /// </summary>
         /// <param name="initializeData">This should be a string literal key or a regex for filtering sets of keys</param>
-        public KeyFilter(string initializeData) :
-            this(initializeData, new Regex(initializeData))
+        public KeyFilter(string initializeData)
         {
-        }
+            _pattern = string.IsNullOrEmpty(initializeData) ? 
+                DefaultRegex : 
+                initializeData;
 
-        public KeyFilter(string initializeData, Regex regex)
-        {
-            _expression = initializeData;
-            _regex = regex;
+            _regex = new Regex(_pattern);
         }
-
 
         public override bool ShouldTrace(TraceEventCache cache, string source, TraceEventType eventType, int id, string formatOrMessage, object[] args, object data1, object[] data)
         {
@@ -60,6 +58,11 @@ namespace Couchbase.Diagnostics
                 return _regex.IsMatch(stringToMatch);
             }
             throw new NotSupportedException("Only TraceEventTypes of Verbose and Information are currently supported.");
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Pattern to match: {0}", _pattern);
         }
     }
 }

@@ -74,5 +74,32 @@ namespace Couchbase.Tests
             var filter = new KeyFilter(pattern);
             Assert.Throws<NotSupportedException>(() => filter.ShouldTrace(new TraceEventCache(), "source", notSupportedTraceEventType, 1, message, null, null, null));
         }
+
+        [Test]
+        public void Test_That_KeyFilter_Defaults_To_Empty_Regex_When_pattern_is_null()
+        {
+            const string pattern = null;
+            const string message = "contentid-11";
+            var filter = new KeyFilter(pattern);
+            Assert.IsTrue(filter.ShouldTrace(new TraceEventCache(), "source", TraceEventType.Information, 1, message, null, null, null));
+        }
+
+        [Test]
+        public void Test_That_KeyFilter_Defaults_To_Empty_Regex_When_pattern_is_empty()
+        {
+            var pattern = string.Empty;
+            const string message = "contentid-11";
+            var filter = new KeyFilter(pattern);
+            Assert.IsTrue(filter.ShouldTrace(new TraceEventCache(), "source", TraceEventType.Information, 1, message, null, null, null));
+        }
+
+        [Test]
+        public void Test_That_ToString_Returns_Expected_Message()
+        {
+            const string pattern = "^([0-9]*-[a-zA-Z]*)+$";
+            const string expected = "Pattern to match: ^([0-9]*-[a-zA-Z]*)+$";
+            var filter = new KeyFilter(pattern);
+            Assert.AreEqual(expected, filter.ToString());
+        }
     }
 }
