@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Couchbase.Configuration.Client;
 using NUnit.Framework;
 
 namespace Couchbase.Tests.N1QL
@@ -15,7 +16,13 @@ namespace Couchbase.Tests.N1QL
         [SetUp]
         public void SetUp()
         {
-            _cluster = new Cluster();
+            _cluster = new Cluster(new ClientConfiguration
+            {
+                Servers = new List<Uri>
+                {
+                    new Uri("http://192.168.30.101:8091")
+                }
+            });
         }
 
         [TearDown]

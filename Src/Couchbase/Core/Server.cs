@@ -32,7 +32,7 @@ namespace Couchbase.Core
         public Server(IOStrategy ioStrategy,  INodeAdapter nodeAdapter, ClientConfiguration clientConfiguration, IBucketConfig bucketConfig) :
             this(ioStrategy,
             new ViewClient(new HttpClient(), new JsonDataMapper(clientConfiguration), bucketConfig, clientConfiguration),
-            new QueryClient(new HttpClient(), new JsonDataMapper(clientConfiguration)),
+            new QueryClient(new HttpClient(), new JsonDataMapper(clientConfiguration), clientConfiguration),
             nodeAdapter, clientConfiguration)
         {
         }
@@ -163,7 +163,6 @@ namespace Couchbase.Core
                     Exception = e,
                     Message = e.Message,
                     Success = false,
-                    Rows = new List<T>()
                 };
             }
             return result;

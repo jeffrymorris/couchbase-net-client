@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Common.Logging;
+using Couchbase.Configuration.Client;
 using Couchbase.Views;
 
 namespace Couchbase.N1QL
@@ -12,12 +14,14 @@ namespace Couchbase.N1QL
     /// </summary>
     public class QueryClient : IQueryClient
     {
-        private readonly static ILog Log = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Log = LogManager.GetCurrentClassLogger();
+        private readonly ClientConfiguration _clientConfig;
 
-        public QueryClient(HttpClient httpClient, IDataMapper dataMapper)
+        public QueryClient(HttpClient httpClient, IDataMapper dataMapper, ClientConfiguration clientConfig)
         {
             HttpClient = httpClient;
             DataMapper = dataMapper;
+            _clientConfig = clientConfig;
         }
 
         /// <summary>
@@ -37,7 +41,7 @@ namespace Couchbase.N1QL
                 var response = await request.Content.ReadAsStreamAsync();
 
                 queryResult = DataMapper.Map<QueryResult<T>>(response);
-                queryResult.Success = queryResult.Error == null;
+                queryResult.Success = queryResult.Status == QueryStatus.Success;
             }
             catch (AggregateException ae)
             {
@@ -73,7 +77,7 @@ namespace Couchbase.N1QL
                 readTask.Wait();
 
                 queryResult = DataMapper.Map<QueryResult<T>>(readTask.Result);
-                queryResult.Success = queryResult.Error == null;
+                queryResult.Success = queryResult.Status == QueryStatus.Success;
             }
             catch (AggregateException ae)
             {
@@ -87,14 +91,103 @@ namespace Couchbase.N1QL
             return queryResult;
         }
 
-        static void ProcessError<T>(Exception ex, QueryResult<T> queryResult)
+        public IQueryResult<T> Query<T>(IQueryRequest request)
+        {
+            var requestUri = request.GetQuery();
+
+            var queryResult = request.IsPost ?
+                Post<T>(requestUri): Get<T>(requestUri);
+
+            return queryResult;
+        }
+
+        public Task<IQueryResult<T>> QueryAsync<T>(IQueryRequest request)
+        {
+            var requestUri = request.GetQuery();
+
+            var queryResult = request.IsPost ?
+                PostAsync<T>(requestUri) : GetAsync<T>(requestUri);
+
+            return queryResult;
+        }
+
+        IQueryResult<T> Post<T>(Uri requestUri)
+        {
+            throw new NotImplementedException();
+        }
+
+        IQueryResult<T> Get<T>(Uri requestUri)
+        {
+            var queryResult = new QueryResult<T>();
+            try
+            {
+                var request = WebRequest.Create(requestUri);
+                request.Timeout = _clientConfig.ViewRequestTimeout;
+                request.Method = "GET";
+
+                using (var response = request.GetResponse() as HttpWebResponse)
+                {
+                    using (var stream = response.GetResponseStream())
+                    {
+                        queryResult = DataMapper.Map<QueryResult<T>>(stream);
+                        queryResult.Success = response.StatusCode == HttpStatusCode.OK;
+                        response.Close();
+                    }
+                }
+            }
+            catch (WebException e)
+            {
+                if (e.Response != null)
+                {
+                    var stream = e.Response.GetResponseStream();
+                    queryResult = DataMapper.Map<QueryResult<T>>(stream);
+                }
+                queryResult.Exception = e;
+                Log.Error(e);
+            }
+            catch (Exception e)
+            {
+                ProcessError(e, queryResult);
+                Log.Error(e);
+            }
+            return queryResult;
+        }
+
+        private async Task<IQueryResult<T>> PostAsync<T>(Uri requestUri)
+        {
+            throw new NotImplementedException();
+        }
+
+        async Task<IQueryResult<T>> GetAsync<T>(Uri requestUri)
+        {
+            var queryResult = new QueryResult<T>();
+            try
+            {
+                var request = await HttpClient.GetAsync(requestUri);
+                using (var response = await request.Content.ReadAsStreamAsync())
+                {
+                    queryResult = DataMapper.Map<QueryResult<T>>(response);
+                    queryResult.Success = queryResult.Status == QueryStatus.Success;
+                }
+            }
+            catch (AggregateException ae)
+            {
+                ae.Flatten().Handle(e =>
+                {
+                    Log.Error(e);
+                    ProcessError(e, queryResult);
+                    return true;
+                });
+            }
+            return queryResult;
+        }
+
+        private static void ProcessError<T>(Exception ex, QueryResult<T> queryResult)
         {
             const string message = "Check Exception and Error fields for details.";
             queryResult.Success = false;
             queryResult.Message = message;
-            queryResult.Error = new Error { Message = message };
             queryResult.Exception = ex;
-            queryResult.Rows = new List<T>();
         }
 
         /// <summary>

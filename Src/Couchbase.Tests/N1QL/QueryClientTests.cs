@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Couchbase.Configuration.Client;
@@ -15,12 +16,13 @@ namespace Couchbase.Tests.N1QL
     [TestFixture]
     public class QueryClientTests
     {
-
+        private string server = "192.168.30.101";
         [Test]
         public void TestQuery_HelloWorld()
         {
-            var client = new QueryClient(new HttpClient(), new JsonDataMapper(new ClientConfiguration()));
-            var uri = new Uri("http://localhost:8093/query");
+            var config = new ClientConfiguration();
+            var client = new QueryClient(new HttpClient(), new JsonDataMapper(config), config);
+            var uri = new Uri(string.Format("http://{0}:8093/query", server));
             const string query = "SELECT 'Hello World' AS Greeting";
 
             var result = client.Query<dynamic>(uri, query);
@@ -31,8 +33,9 @@ namespace Couchbase.Tests.N1QL
         [Test]
         public void TestQuery_Incorrect_Syntax()
         {
-            var client = new QueryClient(new HttpClient(), new JsonDataMapper(new ClientConfiguration()));
-            var uri = new Uri("http://localhost:8093/query");
+            var config = new ClientConfiguration();
+            var client = new QueryClient(new HttpClient(), new JsonDataMapper(config), config);
+            var uri = new Uri(string.Format("http://{0}:8093/query", server));
             const string query = "SELECT 'Hello World' ASB Greeting";
 
             var result = client.Query<dynamic>(uri, query);
@@ -45,8 +48,9 @@ namespace Couchbase.Tests.N1QL
         [Test]
         public void TestQuery_Select_Children_Dynamic()
         {
-            var client = new QueryClient(new HttpClient(), new JsonDataMapper(new ClientConfiguration()));
-            var uri = new Uri("http://localhost:8093/query");
+            var config = new ClientConfiguration();
+            var client = new QueryClient(new HttpClient(), new JsonDataMapper(config), config);
+            var uri = new Uri(string.Format("http://{0}:8093/query", server));
             const string query = "SELECT c.children FROM tutorial as c";
 
             var result = client.Query<dynamic>(uri, query);
@@ -59,14 +63,74 @@ namespace Couchbase.Tests.N1QL
         [Test]
         public void TestQuery_Select_Children_Poco()
         {
-            var client = new QueryClient(new HttpClient(), new JsonDataMapper(new ClientConfiguration()));
-            var uri = new Uri("http://localhost:8093/query");
+            var config = new ClientConfiguration();
+            var client = new QueryClient(new HttpClient(), new JsonDataMapper(config), config);
+            var uri = new Uri(string.Format("http://{0}:8093/query", server));
             const string query = "SELECT c.children FROM tutorial as c";
 
             var result = client.Query<Contact>(uri, query);
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Success);
             Assert.IsNotNull(result.Rows);
+        }
+
+        [Test]
+        public void TestQuery_Select_All()
+        {
+            var config = new ClientConfiguration();
+            var client = new QueryClient(new HttpClient(), new JsonDataMapper(config), config);
+            var uri = new Uri(string.Format("http://{0}:8093/query", server));
+            const string query = "SELECT * FROM default as d";
+
+            var result = client.Query<dynamic>(uri, query);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Success);
+            Assert.IsNotNull(result.Rows);
+        }
+
+        [Test]
+        public void TestQuery_Select_All_Where_Cat()
+        {
+            var config = new ClientConfiguration();
+            var client = new QueryClient(new HttpClient(), new JsonDataMapper(config), config);
+            var uri = new Uri(string.Format("http://{0}:8093/query", server));
+            const string query = "SELECT type, meta FROM default as d WHERE d.type='cat'";
+
+            var result = client.Query<dynamic>(uri, query);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Success);
+            Assert.IsNotNull(result.Rows);
+        }
+
+        [Test]
+        public void Test_Create_Index()
+        {
+            var config = new ClientConfiguration();
+            var client = new QueryClient(new HttpClient(), new JsonDataMapper(config), config);
+            var uri = new Uri(string.Format("http://{0}:8093/query", server));
+            const string query = "CREATE PRIMARY INDEX ON `authenticated`";
+
+            var result = client.Query<dynamic>(uri, query);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Success);
+            Assert.IsNotNull(result.Rows);
+        }
+
+        [Test]
+        public void Test_All()
+        {
+            var config = new ClientConfiguration();
+            var client = new QueryClient(new HttpClient(), new JsonDataMapper(config), config);
+            var request = QueryRequest.Create("SELECT * from `beer-sample` WHERE type=$1 LIMIT 10", false).
+                BaseUri(new Uri(string.Format("http://{0}:8093/query", server))).
+                Pretty(false).
+                AddPositionalParameter("beer");
+
+            var result = client.Query<dynamic>(request);
+            foreach (var row in result.Rows)
+            {
+                Console.WriteLine(row);
+            }
         }
     }
 }
